@@ -74,26 +74,29 @@ class LoginScreen extends StatelessWidget {
             ),
           ),
 
-          // Footer
-          Container(
-            width: double.infinity,
-            color: Color(0xFFE91E63), // Pink footer color
-            padding: const EdgeInsets.symmetric(vertical: 15),
-            child: Column(
-              children: [
-                Image.asset(
-                  'assets/mundiapolis_logo.png', // Replace with your logo path
-                  height: 50,
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  'UNIVERSITÉ MUNDIAPOLIS',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+          // Footer with rounded edges
+          ClipRRect(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+            child: Container(
+              width: double.infinity,
+              color: Color(0xFFE91E63), // Pink footer color
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              child: Column(
+                children: [
+                  Image.asset(
+                    'assets/mundiapolis_logo.png', // Replace with your logo path
+                    height: 50,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 5),
+                  Text(
+                    'UNIVERSITÉ MUNDIAPOLIS',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

@@ -69,92 +69,124 @@ class _SeanceScreenState extends State<SeanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double circleWidth = screenWidth * 0.3; // 30% of the screen width
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Séances'),
       ),
       body: currentIndex < students.length
-          ? Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            students[currentIndex].name,
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 20),
-          GestureDetector(
-            onPanUpdate: (details) {
-              if (details.delta.dx < 0) {
-                // Swiped left for Absent
-                updateStatus("A");
-              } else if (details.delta.dx > 0) {
-                // Swiped right for Present
-                updateStatus("P");
-              }
-            },
-            child: Container(
-              height: 300,
-              width: double.infinity,
-              margin: EdgeInsets.symmetric(horizontal: 40),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
+          ? GestureDetector(
+        onHorizontalDragEnd: (details) {
+          if (details.primaryVelocity != null) {
+            if (details.primaryVelocity! > 0) {
+              // Swiped right for Absent
+              updateStatus("A");
+            } else if (details.primaryVelocity! < 0) {
+              // Swiped left for Present
+              updateStatus("P");
+            }
+          }
+        },
+        child: Stack(
+          children: [
+            // Left Background (A)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                width: circleWidth,
+                height: circleWidth,
+                decoration: BoxDecoration(
+                  color: Colors.pink,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "A",
+                        style: TextStyle(
+                          fontSize: 40,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        "Glisser",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
+            ),
+
+            // Right Background (P)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                width: circleWidth,
+                height: circleWidth,
+                decoration: BoxDecoration(
+                  color: Colors.cyan,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "P",
+                        style: TextStyle(
+                          fontSize: 40,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        "Glisser",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Student Information
+            Align(
+              alignment: Alignment.center,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.person,
-                    size: 100,
-                    color: Colors.grey[700],
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    "Swipe left for Absent, right for Present",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
+                  CircleAvatar(
+                    radius: 60,
+                    backgroundColor: Colors.grey[300],
+                    child: Icon(
+                      Icons.person,
+                      size: 80,
+                      color: Colors.grey[700],
                     ),
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    students[currentIndex].name,
+                    style: TextStyle(
+                        fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
             ),
-          ),
-          SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Column(
-                children: [
-                  Icon(Icons.arrow_back, color: Colors.pink, size: 50),
-                  Text(
-                    "Absent",
-                    style: TextStyle(
-                        color: Colors.pink, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              Column(
-                children: [
-                  Icon(Icons.arrow_forward, color: Colors.teal, size: 50),
-                  Text(
-                    "Present",
-                    style: TextStyle(
-                        color: Colors.teal, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       )
           : Center(
         child: Text(
