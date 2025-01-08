@@ -27,9 +27,10 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
         setState(() {
           absences = data
               .map((absence) => {
+            "id": absence['id_absence'], // Fetch the correct ID from backend
             "name": "${absence['prenom_etudiant']} ${absence['nom_etudiant']}",
-            "percentage": "N/A", // Adjust if you have percentage logic
-            "status": absence['etat_abs']
+            "percentage": "N/A", // Placeholder for percentage logic
+            "status": absence['etat_abs'] ?? 'Unknown',
           })
               .toList();
           isLoading = false;
@@ -48,10 +49,30 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
     }
   }
 
-  void _updateStatus(int index, String status) {
-    setState(() {
-      absences[index]["status"] = status;
-    });
+  Future<void> _updateStatus(int index, String status) async {
+    try {
+      final id = absences[index]['id'];
+      if (id == null) {
+        showError('Error: Absence ID is null');
+        return;
+      }
+
+      final response = await http.put(
+        Uri.parse('http://localhost:5000/api/absences/$id'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({"etat_abs": status}),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          absences[index]["status"] = status;
+        });
+      } else {
+        showError('Failed to update status: ${response.statusCode}');
+      }
+    } catch (e) {
+      showError('Error updating status: $e');
+    }
   }
 
   void showError(String message) {
@@ -161,7 +182,7 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                               showAbsenceModal(
                                 context: context,
                                 studentName: absence["name"],
-                                attendancePercentage: 0.0, // Update as needed
+                                attendancePercentage: 0.0, // Placeholder
                                 onUpdate: (status) {
                                   _updateStatus(index, status);
                                 },
