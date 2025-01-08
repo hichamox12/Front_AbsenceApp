@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ClassesScreen extends StatefulWidget {
   @override
@@ -6,78 +8,137 @@ class ClassesScreen extends StatefulWidget {
 }
 
 class _ClassesScreenState extends State<ClassesScreen> {
-  final List<Map<String, dynamic>> classes = [
-    {'name': '2ACI', 'modules': ['IHM', 'Statistique']},
-    {'name': '3ACI', 'modules': ['Module 1', 'Module 2']},
-    {'name': '1ACI', 'modules': <String>[]},
-    {'name': '1INFO', 'modules': <String>[]},
-    {'name': '2INFO', 'modules': <String>[]},
-  ];
-
-  // Track expanded classes
-  Map<String, bool> expandedClasses = {};
+  List<Map<String, dynamic>> classes = [];
+  Map<int, List<Map<String, dynamic>>> groupesByClass = {};
+  Map<int, List<Map<String, dynamic>>> matieresByClass = {};
+  int? selectedGroupId;
 
   @override
   void initState() {
     super.initState();
-    // Initialize all classes as collapsed
-    for (var classData in classes) {
-      expandedClasses[classData['name']] = false;
+    fetchClasses();
+  }
+
+  Future<void> fetchClasses() async {
+    try {
+      final response = await http.get(Uri.parse('http://localhost:5000/api/classes'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          classes = List<Map<String, dynamic>>.from(data.map((item) => {
+            'id': item['id_classe'],
+            'name': item['nom_classe'],
+          }));
+        });
+      } else {
+        showError('Failed to fetch classes.');
+      }
+    } catch (e) {
+      showError('Error fetching classes: $e');
     }
+  }
+
+  Future<void> fetchGroupes(int classId) async {
+    try {
+      final response = await http.get(Uri.parse('http://localhost:5000/api/groupes?classId=$classId'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          groupesByClass[classId] = List<Map<String, dynamic>>.from(data.map((item) => {
+            'id': item['id_groupe'],
+            'professors': item['list_prof'] ?? 'No Professors',
+            'classId': item['idClasseIdClasse'],
+          })).where((group) => group['classId'] == classId).toList();
+        });
+      } else {
+        showError('Failed to fetch groups for class $classId.');
+      }
+    } catch (e) {
+      showError('Error fetching groups for class $classId: $e');
+    }
+  }
+
+  Future<void> fetchMatieresByClass(int classId) async {
+    try {
+      final response = await http.get(Uri.parse('http://localhost:5000/api/matieres?classId=$classId'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          matieresByClass[classId] = List<Map<String, dynamic>>.from(data.map((item) => {
+            'id': item['id_matiere'],
+            'name': item['nom_module'],
+            'classId': item['idClasseIdClasse'],
+          })).where((matiere) => matiere['classId'] == classId).toList();
+        });
+      } else {
+        showError('Failed to fetch matieres for class $classId.');
+      }
+    } catch (e) {
+      showError('Error fetching matieres for class $classId: $e');
+    }
+  }
+
+  void showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Classes'),
+        title: const Text('Classes'),
+        backgroundColor: Colors.cyan,
       ),
       body: ListView.builder(
         itemCount: classes.length,
         itemBuilder: (context, index) {
-          String className = classes[index]['name'];
-          List<String> modules = List<String>.from(classes[index]['modules']);
-          bool isExpanded = expandedClasses[className] ?? false;
+          final classData = classes[index];
+          final classId = classData['id'];
+          final className = classData['name'];
+          final groupes = groupesByClass[classId] ?? [];
+          final matieresForClass = matieresByClass[classId] ?? [];
 
           return Card(
-            elevation: 3,
-            margin: EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-            color: Colors.cyan,
-
-            child: Column(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: ExpansionTile(
+              title: Text(
+                className,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              onExpansionChanged: (expanded) {
+                if (expanded) {
+                  fetchGroupes(classId);
+                  fetchMatieresByClass(classId);
+                }
+              },
               children: [
-                ListTile(
+                ...groupes.map((groupe) {
+                  final groupId = groupe['id'];
+                  final professors = groupe['professors'];
 
-                  title: Text(
-                    className,
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  trailing: Icon(
-                    isExpanded ? Icons.keyboard_arrow_down : Icons.arrow_forward,
-                  ),
-                  onTap: () {
-                    setState(() {
-                      expandedClasses[className] = !isExpanded;
-                    });
-                  },
-                ),
-                if (isExpanded && modules.isNotEmpty)
-                  Container(
-                    color: Colors.grey[200],
-                    child: Column(
-                      children: modules
-                          .map(
-                            (module) => ListTile(
-                          title: Text(module),
-                          trailing: Icon(Icons.arrow_forward),
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ListTile(
+                        title: Text('Group $groupId'),
+                        subtitle: Text('Professors: $professors'),
+                      ),
+                      ...matieresForClass.map((matiere) {
+                        return ListTile(
+                          title: Text(matiere['name']),
+                          trailing: const Icon(Icons.arrow_forward),
                           onTap: () {
-                            // Navigate to the module details or actions
+                            Navigator.pushNamed(context, '/seance', arguments: {
+                              'classId': classId,
+                              'groupId': groupId, // Pass the groupId dynamically
+                              'matiereId': matiere['id'], // Pass the matiereId dynamically
+                            });
                           },
-                        ),
-                      )
-                          .toList(),
-                    ),
-                  ),
+                        );
+                      }).toList(),
+                    ],
+                  );
+                }).toList(),
               ],
             ),
           );
