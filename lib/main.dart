@@ -25,29 +25,16 @@ class MyApp extends StatelessWidget {
         '/classes': (context) => ClassesScreen(),
         '/seance': (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-
-          if (args == null ||
-              !args.containsKey('classId') ||
-              !args.containsKey('groupId') ||
-              !args.containsKey('subject') ||
-              !args.containsKey('professorId') ||
-              !args.containsKey('seanceId')) {
+          if (args == null || !args.containsKey('classId') || !args.containsKey('groupId') || !args.containsKey('matiereId')) {
             return Scaffold(
               appBar: AppBar(title: const Text('Error')),
-              body: const Center(
-                child: Text(
-                  'Invalid navigation: classId, groupId, subject, professorId, and seanceId are required.',
-                ),
-              ),
+              body: const Center(child: Text('Invalid navigation: classId, groupId, and matiereId are required.')),
             );
           }
-
           return SeanceScreen(
             classId: args['classId'],
             groupId: args['groupId'],
-            subject: args['subject'],
-            professorId: args['professorId'],
-            seanceId: args['seanceId'],
+            matiereId: args['matiereId'],
           );
         },
         '/absences': (context) => AbsencesScreen(),
