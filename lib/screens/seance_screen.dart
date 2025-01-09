@@ -168,13 +168,17 @@ class _SeanceScreenState extends State<SeanceScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              Navigator.of(context).pop(); // Close the modal
+              Navigator.pushReplacementNamed(context, '/absences');
+            },
             child: const Text("OK"),
           ),
         ],
       ),
     );
   }
+
 
   void showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));

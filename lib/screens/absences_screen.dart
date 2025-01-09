@@ -11,6 +11,7 @@ class AbsencesScreen extends StatefulWidget {
 
 class _AbsencesScreenState extends State<AbsencesScreen> {
   List<Map<String, dynamic>> absences = [];
+  List<Map<String, dynamic>> filteredAbsences = [];
   bool isLoading = true;
 
   @override
@@ -33,6 +34,7 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
             "status": absence['etat_abs'] ?? 'Unknown',
           })
               .toList();
+          filteredAbsences = absences; // Initialize filtered list
           isLoading = false;
         });
       } else {
@@ -49,9 +51,22 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
     }
   }
 
+  void _filterAbsences(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        filteredAbsences = absences; // Show all if query is empty
+      } else {
+        filteredAbsences = absences
+            .where((absence) =>
+            absence["name"].toLowerCase().contains(query.toLowerCase()))
+            .toList();
+      }
+    });
+  }
+
   Future<void> _updateStatus(int index, String status) async {
     try {
-      final id = absences[index]['id'];
+      final id = filteredAbsences[index]['id'];
       if (id == null) {
         showError('Error: Absence ID is null');
         return;
@@ -65,7 +80,10 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
 
       if (response.statusCode == 200) {
         setState(() {
-          absences[index]["status"] = status;
+          final originalIndex =
+          absences.indexWhere((absence) => absence['id'] == id);
+          absences[originalIndex]["status"] = status;
+          filteredAbsences[index]["status"] = status;
         });
       } else {
         showError('Failed to update status: ${response.statusCode}');
@@ -83,7 +101,7 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           'Liste des Absences',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
@@ -91,87 +109,62 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
         centerTitle: true,
       ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : absences.isEmpty
-          ? Center(child: Text("No absences found."))
+          ? const Center(child: Text("No absences found."))
           : Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Filter and Search Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // Handle filter action
-                  },
-                  icon: Icon(Icons.filter_list, color: Colors.white),
-                  label: Text(
-                    "Filter",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.pinkAccent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+            // Search Bar
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: "Search for a student...",
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                Container(
-                  width: 200,
-                  height: 40,
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: "Search",
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+                onChanged: _filterAbsences,
+              ),
             ),
-            SizedBox(height: 16),
             // Absences Data Table
             Expanded(
               child: SingleChildScrollView(
                 child: DataTable(
-                  columns: [
+                  columns: const [
                     DataColumn(
                       label: Text(
                         'Name',
                         style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16),
+                            fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ),
                     DataColumn(
                       label: Text(
                         'Absences',
                         style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16),
+                            fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ),
                     DataColumn(
                       label: Text(
                         'Status',
                         style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16),
+                            fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ),
                   ],
-                  rows: absences.map((absence) {
-                    int index = absences.indexOf(absence);
+                  rows: filteredAbsences.map((absence) {
+                    int index = filteredAbsences.indexOf(absence);
                     return DataRow(
                       cells: [
                         DataCell(Text(absence["name"])),
                         DataCell(Text(
                           absence["percentage"],
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.cyan,
                           ),
@@ -195,7 +188,7 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                                 _getStatusColor(absence["status"]),
                                 child: Text(
                                   absence["status"][0],
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold),
                                 ),
@@ -209,7 +202,6 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                 ),
               ),
             ),
-            SizedBox(height: 16),
             // Submit and Stats Buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -220,13 +212,13 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.cyan,
-                    padding: EdgeInsets.symmetric(
+                    padding: const EdgeInsets.symmetric(
                         vertical: 12, horizontal: 40),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(
+                  child: const Text(
                     'Submit',
                     style: TextStyle(
                       color: Colors.pinkAccent,
@@ -239,9 +231,9 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                   onPressed: () {
                     // Handle stats action
                   },
-                  icon: Icon(Icons.pie_chart,
+                  icon: const Icon(Icons.pie_chart,
                       color: Colors.pinkAccent),
-                  label: Text(
+                  label: const Text(
                     "Stats",
                     style: TextStyle(
                       color: Colors.cyan,
@@ -249,7 +241,7 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.pinkAccent),
+                    side: const BorderSide(color: Colors.pinkAccent),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -275,4 +267,28 @@ class _AbsencesScreenState extends State<AbsencesScreen> {
         return Colors.grey;
     }
   }
+}
+
+void showAbsenceModal({
+  required BuildContext context,
+  required String studentName,
+  required double attendancePercentage,
+  required Function(String status) onUpdate,
+}) {
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.only(
+        topLeft: Radius.circular(16),
+        topRight: Radius.circular(16),
+      ),
+    ),
+    builder: (context) {
+      return AbsenceModal(
+        studentName: studentName,
+        attendancePercentage: attendancePercentage,
+        onUpdate: onUpdate,
+      );
+    },
+  );
 }
